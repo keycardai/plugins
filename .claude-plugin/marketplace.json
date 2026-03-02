@@ -1,0 +1,12 @@
+{
+  "name": "keycard",
+  "owner": {
+    "name": "On-Device Team"
+  },
+  "plugins": [
+    {
+      "name": "cli",
+      "source": "./plugins/cli"
+    }
+  ]
+}
