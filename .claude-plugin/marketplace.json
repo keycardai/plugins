@@ -1,0 +1,12 @@
+{
+  "name": "keycard",
+  "owner": {
+    "name": "Keycard Labs, Inc."
+  },
+  "plugins": [
+    {
+      "name": "cli",
+      "source": "./plugins/cli"
+    }
+  ]
+}

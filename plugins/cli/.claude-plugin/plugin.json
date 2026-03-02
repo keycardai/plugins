@@ -1,0 +1,18 @@
+{
+  "name": "keycard/cli",
+  "description": "A plugin to integrate Keycard with Claude Code.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "go run cmd/keycard/main.go agent hook --claude"
+          }
+        ]
+      }
+    ]
+  },
+  "version": "0.0.1"
+}
