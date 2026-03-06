@@ -5,8 +5,8 @@
   },
   "plugins": [
     {
-      "name": "cli",
-      "source": "./plugins/cli"
+      "name": "keycard-cli",
+      "source": "./plugins/keycard-cli"
     }
   ]
 }
