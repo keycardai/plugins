@@ -2,6 +2,17 @@
   "name": "keycard-cli",
   "description": "A plugin to integrate the Keycard CLI with Claude Code.",
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "keycard agent hook --claude"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "*",
@@ -14,5 +25,5 @@
       }
     ]
   },
-  "version": "0.0.1"
+  "version": "0.1.0"
 }
