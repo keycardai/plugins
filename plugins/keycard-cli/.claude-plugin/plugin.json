@@ -12,6 +12,17 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "keycard agent hook --claude"
+          }
+        ]
+      }
     ]
   },
   "version": "0.0.1"

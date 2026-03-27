@@ -1,10 +1,10 @@
 ---
-name: may-i
+name: keycard-policy
 description: Inspect Keycard's Cedar policy and answer questions about what tools are allowed like "May I use the Bash tool?"
-argument-hint: "[tool use question, e.g. 'May I use the Bash tool?']"
+argument-hint: "[policy question, e.g. 'What tools are allowed?']"
 ---
 
-# keycard-may-i
+# keycard-policy
 
 You are helping the user understand what tools are permitted by their active Keycard Cedar policy.
 
@@ -21,7 +21,7 @@ If the command fails (no policy file), display the returned message, then stop.
 
 The user's tool use question is: `$ARGUMENTS`
 
-If `$ARGUMENTS` is empty, ask: "What would you like to know? For example: 'May I use the Bash tool?' or 'What tools does my policy allow?'"
+If `$ARGUMENTS` is empty, ask: "What would you like to know? For example: 'What tools are allowed?' or 'Is the Bash tool permitted?'"
 
 Use the policy to clearly answer the question:
 - For "May I use X?" questions: state allow or deny, citing the specific policy clause.
