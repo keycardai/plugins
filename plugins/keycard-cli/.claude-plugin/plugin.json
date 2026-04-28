@@ -2,6 +2,17 @@
   "name": "keycard-cli",
   "description": "A plugin to integrate the Keycard CLI with Claude Code.",
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -z \"$KEYCARD_RUN\" ] && printf 'Note: this session was not started via `keycard run`. Keycard policy enforcement and credential injection are inactive.\\nRelaunch with: keycard run -- claude\\n'; exit 0"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "*",
