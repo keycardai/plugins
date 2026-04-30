@@ -6,7 +6,7 @@ A Claude Code plugin that integrates the Keycard CLI for zero-trust tool access
 control. It enforces Cedar policies at runtime (via hooks) and provides skills
 for managing those policies and credentials.
 
-**Published as:** `keycardai/keycard-cli`
+**Published as:** `keycardai@keycard`
 **Current version:** 0.0.2
 
 ## Architecture

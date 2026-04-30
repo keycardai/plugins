@@ -66,7 +66,7 @@ Add the marketplace and install the plugin:
 
 ```
 /plugin marketplace add keycardai/plugins
-/plugin install keycard-cli@keycardai
+/plugin install keycardai@keycard
 ```
 
 Or for local development, point Claude Code at the plugin directory:

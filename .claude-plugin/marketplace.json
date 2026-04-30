@@ -1,11 +1,11 @@
 {
-  "name": "keycardai",
+  "name": "keycard",
   "owner": {
     "name": "Keycard Labs, Inc."
   },
   "plugins": [
     {
-      "name": "keycard-cli",
+      "name": "keycardai",
       "source": "./plugins/keycard-cli"
     }
   ]
