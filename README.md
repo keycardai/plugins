@@ -62,17 +62,18 @@ plugins/keycard-cli/
 
 ## Installation
 
-Install via Claude Code's plugin system:
+Add the marketplace and install the plugin:
 
-```bash
-claude plugin add keycardai/keycard-cli
+```
+/plugin marketplace add keycardai/plugins
+/plugin install keycard-cli@keycardai
 ```
 
-Or clone this repo and install locally:
+Or for local development, point Claude Code at the plugin directory:
 
 ```bash
 git clone https://github.com/keycardai/plugins.git
-claude plugin add ./plugins/keycard-cli
+claude --plugin-dir ./plugins/keycard-cli
 ```
 
 ## Getting Started
