@@ -3,7 +3,7 @@ name: keycard-upsert-config
 description: |
   Set or change a field in keycard.toml — reads the current value and writes a targeted update.
   TRIGGER when: user wants to set or change a field in keycard.toml; wants to add or update a credentials entry.
-  DO NOT TRIGGER when: user asks about Cedar policy rules (use `keycard-policy`); user asks what credentials are active in the current session (use `keycard-credentials`); user wants to initialize keycard for a new project (use `keycard-init`); user is asking a field question only with no intent to write (read `.agents/reference/keycard-config-fields.md` directly).
+  DO NOT TRIGGER when: user asks about Cedar policy rules (use `keycard-query-policy`); user asks what credentials are active in the current session (use `keycard-credentials`); user wants to initialize keycard for a new project (use `keycard-init`); user is asking a field question only with no intent to write (read `.agents/reference/keycard-config-fields.md` directly).
 argument-hint: "[what to change, e.g. 'set my zone to dev-123' or 'add a GitHub credential entry for GITHUB_TOKEN']"
 ---
 
