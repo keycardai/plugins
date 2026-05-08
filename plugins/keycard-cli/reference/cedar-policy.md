@@ -51,12 +51,10 @@ Always `Action::"Agent::ToolUse"` for tool-use policies.
 Annotations are placed immediately before the `permit` or `forbid` keyword, in this order:
 
 1. `@description("...")` — **always required** on any new or modified clause. One sentence: who it affects, what it allows/denies, and why (if inferable). Do not retroactively annotate existing clauses that were not part of a requested change.
-2. `@itl("prompt")` — adds in-the-loop (ITL) gating: the user must explicitly approve the tool call before it executes. Add only when explicitly requested.
-3. `@credentials("name")` — routes `permit`-matched tool calls to a named credential set (e.g. `"staging"`, `"prod"`). Annotations on `forbid` clauses have no effect.
+2. `@itl("prompt")` — adds in-the-loop (ITL) gating: the user must explicitly approve the tool call before it executes. Add only when explicitly requested. `@itl` on `forbid` has no effect — annotations are only evaluated on `permit`-matched clauses.
 
 ```cedar
-@description("Permit all users to invoke the Bash tool, routed to staging credentials with in-the-loop review.")
-@credentials("staging")
+@description("Permit all users to invoke the Bash tool with in-the-loop review.")
 @itl("prompt")
 permit (
   principal,
@@ -65,13 +63,49 @@ permit (
 );
 ```
 
-## Credential-set inference rule
+## Compactness and carve-outs
 
-Before generating a new clause, check whether any existing clause in the policy already references the same tool (or same principal, if the change is principal-scoped). If so, and that clause carries a `@credentials` annotation, default to the same credential set — and note the inference explicitly in the explanation. If multiple existing clauses reference conflicting credential sets for the same tool, surface the ambiguity and ask the user to choose.
+Prefer modifying or splitting an existing clause over appending a new overlapping one.
 
-## Compactness rule
+**Carve-out rule**: a carve-out is needed when a new `permit` clause is narrower than an existing `permit` clause — add an `unless` condition to the broader clause so the two clauses have disjoint match sets. Without a carve-out, both clauses match the narrower principal/resource, creating annotation ambiguity. A carve-out is not needed for `permit`+`forbid` pairs (`forbid` always wins) or when no existing `permit` clause covers the same scope.
 
-Prefer modifying or splitting an existing clause over appending a new overlapping one. Cedar collects annotations from *all* matching policies: two `permit` clauses covering the same tool with different `@credentials` values creates application-level ambiguity about which credential set to use. Split the existing clause (one clause per tool) so each tool has unambiguous coverage.
+**Example — permit+permit narrowing (broken → fixed):**
+
+```cedar
+// BROKEN: alice matches both clauses; annotation is ambiguous.
+@description("Permit all users to invoke Bash.")
+permit (
+  principal,
+  action == Action::"Agent::ToolUse",
+  resource == Tool::"bash"
+);
+
+@description("Permit alice to invoke Bash with ITL review.")
+@itl("prompt")
+permit (
+  principal == User::"alice@example.com",
+  action == Action::"Agent::ToolUse",
+  resource == Tool::"bash"
+);
+
+// FIXED: carved out — disjoint match sets.
+@description("Permit all users except alice to invoke Bash.")
+permit (
+  principal,
+  action == Action::"Agent::ToolUse",
+  resource == Tool::"bash"
+) unless {
+  principal == User::"alice@example.com"
+};
+
+@description("Permit alice to invoke Bash with ITL review.")
+@itl("prompt")
+permit (
+  principal == User::"alice@example.com",
+  action == Action::"Agent::ToolUse",
+  resource == Tool::"bash"
+);
+```
 
 ## Forbid-diagnosis rule
 

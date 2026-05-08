@@ -3,7 +3,7 @@ name: keycard-upsert-policy
 description: |
   Propose, confirm, and apply a Cedar policy change — propose → confirm → write → verify.
 
-  TRIGGER when: user wants to change, add, remove, enable, disable, allow, deny, grant, restrict, block a policy rule, add ITL gating, or route a tool to a credential set.
+  TRIGGER when: user wants to change, add, remove, enable, disable, allow, deny, grant, restrict, block a policy rule, or add ITL gating.
   DO NOT TRIGGER when: user asks questions about what is allowed or why something was blocked (→ `keycard-query-policy`).
 argument-hint: "[policy change request, e.g. 'Allow the Bash tool' or 'Require approval for WebFetch']"
 examples:
@@ -16,7 +16,7 @@ examples:
 
 You are helping the user modify the Cedar policy enforced by Keycard. Follow the propose → confirm → write → verify pattern: present the full diff first, write only after explicit user confirmation.
 
-See `.agents/reference/cedar-policy.md` for Cedar syntax rules, annotation semantics, and compactness/credential-inference rules. Policy reads must always use `keycard agent policy` — never the Read tool on the file directly.
+See `.agents/reference/cedar-policy.md` for Cedar syntax rules, annotation semantics, and compactness/carve-out rules. Policy reads must always use `keycard agent policy` — never the Read tool on the file directly.
 
 ## Step 1 — Read the policy
 
@@ -41,11 +41,9 @@ If the requested change is already fully represented in the current policy, skip
 
 Generate the **minimal Cedar clause(s)** needed to implement the requested change, following the rules in `.agents/reference/cedar-policy.md`. Key checklist:
 
-- Apply the credential-set inference rule.
-- Apply the compactness rule.
+- Apply the compactness and carve-outs rule.
 - Add `@description(...)` on every new or modified clause.
 - Add `@itl("prompt")` only if explicitly requested.
-- Add `@credentials("name")` only if explicitly requested.
 
 Compose the **full updated policy** by merging the new clause(s) into the policy from Step 1. Keep the full text internally — you will need it for Step 5.
 
@@ -56,16 +54,14 @@ Compose the **full updated policy** by merging the new clause(s) into the policy
    - Which tools become allowed or blocked.
    - Whether any existing rules are removed or superseded.
    - If any affected tool already has or gains a `@itl("prompt")` annotation: note that tool calls will require explicit approval before execution.
-   - If any affected `permit` clause already has or gains a `@credentials("name")` annotation: note which credential set tool calls will be routed to.
-3. The confirmation prompt: **"Does this look correct? Type 'yes' to apply, or describe any adjustments."**
+3. Prompt the user to accept the update or describe adjustments.
 
-**Example output** (for "allow the Bash tool with staging credentials and ITL"):
+**Example output** (for "allow the Bash tool with ITL"):
 
 ````
 ```cedar
-+ @description("Permit all users to invoke the Bash tool, routed to staging credentials with in-the-loop review.")
++ @description("Permit all users to invoke the Bash tool with in-the-loop review.")
 + @itl("prompt")
-+ @credentials("staging")
 + permit (
 +   principal,
 +   action == Action::"Agent::ToolUse",
@@ -74,29 +70,7 @@ Compose the **full updated policy** by merging the new clause(s) into the policy
 ```
 
 **Policy Updates:**
-- `bash` — now permitted with in-the-loop (ITL) and `staging` credentials (inferred from an existing clause in the policy that already uses `staging` credentials).
-
-Does this look correct? Type 'yes' to apply, or describe any adjustments.
-````
-
-**Example output** (for "switch Bash to prod credentials"):
-
-````
-```cedar
-- @description("Permit all users to invoke the Bash tool, routed to staging credentials.")
-- @credentials("staging")
-- permit (
-+ @description("Permit all users to invoke the Bash tool, routed to prod credentials.")
-+ @credentials("prod")
-+ permit (
-    principal,
-    action == Action::"Agent::ToolUse",
-    resource == Tool::"bash"
-  );
-```
-
-**Policy Updates:**
-- `bash` — credential set changed from `staging` to `prod`; existing `permit` clause replaced.
+- `bash` — now permitted with in-the-loop (ITL) approval required before execution.
 
 Does this look correct? Type 'yes' to apply, or describe any adjustments.
 ````

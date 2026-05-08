@@ -27,8 +27,8 @@ Only the fields below are recognised in `keycard.toml`. Fields marked **env/flag
 | `home.dir` | `KEYCARD_HOME` | OS default | Home directory override — **env/flag only** |
 | `home.state` | `XDG_STATE_HOME` | `~/.local/state/keycard` | State directory override — **env/flag only** |
 | `home.cache` | `XDG_CACHE_HOME` | `~/.cache/keycard` | Cache directory override — **env/flag only** |
-| `credentials.<name>[*].env_var` | — | — | Env var to populate from the exchanged token (see [Credentials](#credentials)) |
-| `credentials.<name>[*].resource` | — | — | Resource URI for OIDC token exchange (required) |
+| `credentials.default[*].env_var` | — | — | Env var to populate from the exchanged token (see [Credentials](#credentials)) |
+| `credentials.default[*].resource` | — | — | Resource URI for OIDC token exchange (required) |
 
 > If a TOML edit has no effect, the field is probably env/flag only. Use the corresponding environment variable instead.
 
@@ -36,9 +36,9 @@ Only the fields below are recognised in `keycard.toml`. Fields marked **env/flag
 
 ## Credentials
 
-`credentials` is the only complex section writable to TOML. It maps named credential sets to lists of entries; the default set name is `default`.
+`credentials` is the only complex section writable to TOML. It is a list of credential entries under `[[credentials.default]]`.
 
-Each `[[credentials.<name>]]` entry requires two fields:
+Each `[[credentials.default]]` entry requires two fields:
 - `resource` — OIDC resource URI to exchange a token for
 - `env_var` — environment variable to populate with the exchanged token
 

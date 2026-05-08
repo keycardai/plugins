@@ -38,8 +38,8 @@ Handle the question or diagnostic request using the policy from Step 2:
 ### Q&A intents
 
 - **"May I use X?"** — state allow or deny, citing the specific Cedar clause. If a `forbid` matches, note it takes precedence over any `permit`.
-- **"What can I do?"** / **"What tools are allowed?"** — list all tools covered by `permit` clauses. Note any with `@itl` (require approval) or `@credentials` (routed to a named credential set). Note any `forbid` overrides.
-- **Active-policy questions** — answer questions about the *contents of the loaded policy* (e.g. "do I have any `@itl` rules?", "what credential sets does my policy reference?") using the policy text from Step 2. For abstract Cedar concepts not tied to the active policy, say: "That's a general Cedar question — see `.agents/reference/cedar-policy.md` for syntax details. To change your policy, run `/keycard-upsert-policy`."
+- **"What can I do?"** / **"What tools are allowed?"** — list all tools covered by `permit` clauses. Note any with `@itl` (require approval). Note any `forbid` overrides.
+- **Active-policy questions** — answer questions about the *contents of the loaded policy* (e.g. "do I have any `@itl` rules?") using the policy text from Step 2. For abstract Cedar concepts not tied to the active policy, say: "That's a general Cedar question — see `.agents/reference/cedar-policy.md` for syntax details. To change your policy, run `/keycard-upsert-policy`."
 
 ### Block-diagnosis intents
 
@@ -92,7 +92,6 @@ Output:
 > **Permitted tools:**
 > - `bash` — unrestricted
 > - `read` — requires in-the-loop approval (`@itl`)
-> - `mcp:github.search_repositories` — routed to `github` credential set (`@credentials("github")`)
 >
 > No `forbid` clauses are active.
 
