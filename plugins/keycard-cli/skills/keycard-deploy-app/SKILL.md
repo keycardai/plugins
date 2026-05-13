@@ -10,7 +10,9 @@ metadata: {}
 
 # keycard-deploy-app
 
-Deploy a Keycard-aware app to a hosting provider. The skill is a generic dispatcher — it resolves the provider, reads the provider-specific reference doc, and executes its steps. Per-provider procedures live in `.agents/reference/deploy-<provider>.md` (resolve the link relative to this `SKILL.md`).
+Deploy a Keycard-aware app to a hosting provider. The skill gathers all requirements upfront — provider, app directory, zone context, toolchain status, and the state of existing Keycard primitives — presents a plan, and only executes after the user confirms.
+
+The skill is a generic dispatcher — it resolves the provider, reads the provider-specific reference doc, and executes its steps. Per-provider procedures live in `reference/deploy-<provider>.md` (resolve the link relative to this `SKILL.md`).
 
 Currently supported providers:
 
@@ -35,19 +37,25 @@ This skill ships a user's work to production — often their first deploy with K
 
 See [`skill-resume.md`](../../reference/skill-resume.md) for the full protocol. **File location:** write `PROGRESS.md` at `./<app-dir>/PROGRESS.md` (append below any existing `keycard-template-app` steps).
 
-## Step 1 — Resolve provider
+---
+
+## Phase A — Gather and Plan
+
+Steps 1–5 collect everything the skill needs and present a plan. No files are written and no API mutations happen until the user confirms.
+
+### Step 1 — Resolve provider
 
 **Tell the user first:** "First, figuring out which hosting platform to deploy to."
 
 Default to `fly`. If the user's prompt names a different provider, match it against the supported table above. If no match, stop with an error listing supported providers.
 
-## Step 2 — Resolve app directory and project context
+### Step 2 — Resolve app directory and project context
 
 **Tell the user first:** "Looking at your project to understand what we're deploying."
 
 Infer the app directory from the user's prompt or default to `.`. Read `<app-dir>/keycard.toml` for `[project].name`; fall back to the project manifest (`package.json`, `pyproject.toml`, `Cargo.toml`) if unset.
 
-### Resolve zone and org context
+#### Resolve zone and org context
 
 Follow the same resolution logic as `keycard-template-app` Step 3:
 
@@ -56,11 +64,11 @@ Follow the same resolution logic as `keycard-template-app` Step 3:
 
 If either cannot be resolved, stop with the same friendly error messages as `keycard-template-app` Step 3 (explain what a zone/org is, link docs, tell the user to run `keycard auth signin`).
 
-### Derive zone URL
+#### Derive zone URL
 
-Derive `KEYCARD_URL` using the env-domain table in `keycard-template-app` Step 3. Carry `<zone-id>`, `<org-id>`, and `<KEYCARD_URL>` forward into all later steps.
+Derive `KEYCARD_URL` as `https://<zone-id>.keycard.cloud`. Carry `<zone-id>`, `<org-id>`, and `<KEYCARD_URL>` forward into all later steps.
 
-## Step 3 — Toolchain pre-flight
+### Step 3 — Toolchain pre-flight
 
 **Tell the user first:** "Checking that the hosting provider's CLI tool is installed."
 
@@ -70,19 +78,160 @@ Verify the provider CLI is installed:
 command -v <provider-cli>
 ```
 
-## Step 4 — Execute provider-specific procedure
+If the CLI is missing, surface the install command from the provider reference doc and stop.
 
-**Tell the user first:** Before executing the provider reference doc, give a brief overview of what's about to happen — e.g. "Now I'll walk through the fly.io deploy steps: check credentials, set up the deployment config, tell Keycard to trust your fly org's identity, register the deployed URL, ship, and verify."
+### Step 4 — Read provider reference doc and look up existing primitives
 
-Read `.agents/reference/deploy-<provider>.md` end-to-end. It is the **authoritative source** for everything that follows — if anything in this skill conflicts with the reference doc, follow the reference doc.
+**Tell the user first:** "Checking what's already registered in Keycard so I know what needs to be created."
 
-The reference doc may require provider-specific values (e.g. fly org slug). Prompt the user for any required value not already known. When the reference doc specifies an enumeration command (e.g. `flyctl orgs list`), run it and present the user with their actual choices — never auto-select or invent candidates.
+Read `reference/deploy-<provider>.md` end-to-end from the skill's reference directory. It is the **authoritative source** for the provider-specific procedure. Extract:
 
-Execute each section of the reference doc in order. When a section wires credentials, apply the two-environment rule: provider-CLI credentials target the **session** `keycard.toml`; app-runtime credentials target `<app-dir>/keycard.toml`. Invoke `/keycard-discover-entities` from the correct working directory — it writes to cwd's `keycard.toml`.
+| Field | Where it feeds |
+|---|---|
+| Required primitives (providers, applications, resources, application-credentials) | Step 4 (lookup) + Phase B (provision) |
+| Provider arguments (e.g. fly org slug) | Step 4 (prompt) + Phase B (execution) |
+| Credential env var and probe command | Step 4 (status check) + Phase B (wiring) |
+| Deploy command | Phase B (deploy) |
+| Verification endpoints | Phase B (verify) |
 
-Narrate before each section and surface created artifacts/IDs after. Never dump raw API responses.
+#### Resolve provider-specific arguments
 
-## Step 5 — Handoff summary
+If the reference doc requires additional arguments (e.g. `<fly-org-slug>`), resolve them now. When the reference doc specifies an enumeration command (e.g. `flyctl orgs list`), run it and present the user with their actual choices — never auto-select or invent candidates.
+
+#### Check credential status
+
+Probe whether the deploy credential is already wired using the reference doc's probe command (e.g. `flyctl auth whoami`). Classify as:
+
+- **wired** — credential is available; no session restart will be needed
+- **not wired** — credential needs to be configured; plan will flag a session restart
+
+#### Look up existing Keycard primitives
+
+Query the Management API to determine which primitives the reference doc requires already exist in the zone and which need to be created. This avoids surprises during execution and lets the plan show the user exactly what will happen.
+
+Use the zone-scoped listing endpoints from [`keycard-management-api.md`](../../reference/keycard-management-api.md) to fetch providers, applications, resources, and application-credentials (all `GET` requests — no mutations).
+
+For each primitive the reference doc requires, classify as:
+
+- **exists** — reuse its `id`; carry the ID forward
+- **needs creation** — will be created in Phase B
+
+For provider lookups, match on the `protocols.oauth2.issuer` field (e.g. `https://oidc.fly.io/<fly-org-slug>`). If the reference doc requires a provider type that doesn't exist in the zone, mark it as a blocker.
+
+If the Management API is unavailable (no active session), skip the lookup and mark all primitives as **unknown** — the plan will note that provisioning status couldn't be verified.
+
+### Step 5 — Present plan
+
+Show the user a structured summary of everything that will happen. This is a hard gate — do **not** proceed to Phase B without explicit user confirmation.
+
+Format:
+
+```
+Here's the deploy plan:
+
+Provider:     fly.io
+App:          ./<app-dir> (<project-name>)
+Fly org:      <fly-org-slug>
+Zone:         <zone-id> (org: <org-id>)
+
+Credential:
+  ✓ wired     FLY_API_TOKEN (flyctl auth whoami succeeded)
+  — or —
+  → configure FLY_API_TOKEN (session restart required after wiring)
+
+Deploy artifacts:
+  - fly.toml (KEYCARD_URL, internal_port=<port>)
+  - Dockerfile (if needed)
+
+Keycard primitives:
+  ✓ exists    Provider "fly-<fly-org-slug>" (OIDC)
+  → create    Application "<project-name>"
+  → create    Resource "https://<project-name>.fly.dev/<path>"
+  → create    Application Credential (<fly-org-slug>:<project-name>:*)
+
+Ship:         flyctl deploy --remote-only
+Verify:       flyctl status + well-known endpoint checks
+
+Ready to go?
+```
+
+Rules for the plan:
+
+- Use `✓ exists` / `✓ wired` for items found in Step 4, `→ create` / `→ configure` for those that need work.
+- If Step 4 lookups were skipped (no session), use `? unknown` and note that provisioning status couldn't be checked.
+- If the reference doc requires a provider type that doesn't exist, show `✗ missing` and explain what the user needs to create manually.
+- If the credential is not wired, prominently note that a **session restart** will be required partway through execution (after wiring the credential, before deploying).
+- Use the skill's narration voice and concept glossary, not reference-doc jargon. Introduce concepts on first mention with docs links per [`skill-narration.md`](../../reference/skill-narration.md).
+- If the user wants changes (different provider, different app dir, different fly org), loop back to the relevant gather step and re-present the plan.
+
+---
+
+## Phase B — Execute
+
+The user has confirmed. Now wire credentials, configure deploy artifacts, provision primitives, ship, and verify.
+
+Execute each section of the provider reference doc in order. Narrate before each section and surface created artifacts/IDs after. Never dump raw API responses.
+
+### Step 6 — Credential pre-flight (per reference doc §1)
+
+If the credential was classified as **wired** in Step 4, skip ahead to Step 8.
+
+If the credential was classified as **not wired**, proceed to Step 7.
+
+### Step 7 — Wire credential and policy (per reference doc §2)
+
+**Tell the user first:** "Wiring the deploy credential into your Keycard session so the deploy tool can authenticate."
+
+When the reference doc specifies credential wiring:
+- Delegate credential registration to `/keycard-discover-entities` for the appropriate resource. Invoke from the **session-root working directory** (not from inside `<app-dir>`).
+- Read the active policy with `keycard agent policy`. If it would block provider CLI invocations, delegate to `/keycard-upsert-policy`.
+
+#### Session restart
+
+After wiring the credential, the agent session must be restarted. Print the rationale block from the reference doc (substituting actual values), create `PROGRESS.md`, and stop. Do not proceed until the session has been restarted and the credential probe succeeds in the new session.
+
+### Step 8 — Deploy artifacts (per reference doc §3)
+
+**Tell the user first:** "Setting up the deployment configuration — this tells the hosting provider how to build and run your app."
+
+Follow the reference doc's deploy artifact procedure:
+- Port alignment between the app and the deploy config.
+- Generate or validate provider-specific config files (e.g. `fly.toml`).
+- Write `KEYCARD_URL` into the deploy config.
+- Surface generated files and require user confirmation before continuing.
+
+### Step 9 — Provision Keycard primitives (per reference doc §4–§6)
+
+**Tell the user first:** explain once what's being registered — Providers, Applications, Resources, and Application Credentials — using the concept definitions from the narration section. Mention that re-running updates in place rather than creating duplicates.
+
+For primitives classified as **exists** in Step 4, reuse the carried ID — no API call needed. For primitives classified as **needs creation**, create them now following the reference doc's procedure.
+
+After each create call, name the artifact: "✓ Provider registered: `fly-<fly-org-slug>`" — don't print raw API responses.
+
+General rules:
+
+- **Idempotency.** Use stable identifiers. On 409, look the entity up and reuse its ID.
+- **Provider selection.** Pick the type the reference doc specifies. If multiple match, ask. If none, abort with a `https://console.keycard.ai → Providers` pointer.
+- **Field accuracy.** Match identifiers to the deployed URL exactly — mismatches cause `invalid_target` errors at token-mint time.
+- **Failure handoff.** On 403, network error, or missing session: `Could not auto-register. Register manually at https://console.keycard.ai → <Section>.`
+
+Carry every returned ID forward for the final summary.
+
+### Step 10 — Deploy (per reference doc §7)
+
+**Tell the user first:** "Shipping to the hosting provider — this builds and deploys your app."
+
+Run the deploy command from the reference doc (e.g. `flyctl deploy --remote-only` from `<app-dir>`).
+
+On failure: surface the verbatim provider CLI output, run provider-specific log commands for triage, and stop. Do **not** read `.env` or echo secret values.
+
+### Step 11 — Verify (per reference doc §8)
+
+**Tell the user first:** "Verifying the deploy — checking the app is running and Keycard trust is configured correctly."
+
+Follow the reference doc's verification procedure (app status, well-known endpoint checks, trust chain verification). Surface any mismatches with actionable fix instructions.
+
+### Step 12 — Handoff summary
 
 Print **one unified block** with three parts:
 
@@ -93,8 +242,10 @@ Print **one unified block** with three parts:
 **Prohibitions:**
 - No separate "Next steps" or "from the reference doc" blocks — one unified block only.
 - Translate implementation detail into outcomes; do not pass through reference-doc phrasing.
-- When a restart is required, include: (a) why, (b) what changes, (c) the exact resume command. Reproduce the rationale from the provider reference doc (e.g. `deploy-fly.md` §2).
+- When a restart is required, include: (a) why, (b) what changes, (c) the exact resume command. Reproduce the rationale from the provider reference doc.
 
 ## Examples
 
-**Invocation:** `/keycard-deploy-app` — the skill infers the provider (defaults to fly) and app directory, then prompts for any missing values like the fly org slug.
+**Invocation:** `/keycard-deploy-app` — the skill gathers provider, app directory, zone context, and fly org, checks which primitives exist, presents a plan showing credential status and what will be created, then executes after confirmation.
+
+**From a fresh scaffold:** after `/keycard-template-app` sets up the local app, run `/keycard-deploy-app` to ship it to production. The plan will show the Application as already existing (created during scaffolding) and flag only the deploy-specific primitives (OIDC provider, deployed Resource, Application Credential) for creation.
