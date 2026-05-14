@@ -103,7 +103,7 @@ If the reference doc requires additional arguments (e.g. `<fly-org-slug>`), reso
 Probe whether the deploy credential is already wired using the reference doc's probe command (e.g. `flyctl auth whoami`). Classify as:
 
 - **wired** — credential is available; no session restart will be needed
-- **not wired** — credential needs to be configured; plan will flag a session restart
+- **not wired** — credential needs to be configured; the user will choose between Keycard Vault (automated setup + console link + session restart) or manual login (`flyctl auth login`, no restart needed)
 
 #### Look up existing Keycard primitives
 
@@ -137,7 +137,7 @@ Zone:         <zone-id> (org: <org-id>)
 Credential:
   ✓ wired     FLY_API_TOKEN (flyctl auth whoami succeeded)
   — or —
-  → configure FLY_API_TOKEN (session restart required after wiring)
+  → configure FLY_API_TOKEN (choose: Keycard Vault or manual login)
 
 Deploy artifacts:
   - fly.toml (KEYCARD_URL, internal_port=<port>)
@@ -178,15 +178,16 @@ If the credential was classified as **wired** in Step 4, skip ahead to Step 8.
 
 If the credential was classified as **not wired**, proceed to Step 7.
 
-### Step 7 — Wire credential and policy (per reference doc §2)
+### Step 7 — Configure credential (per reference doc §2)
 
-**Tell the user first:** "Wiring the deploy credential into your Keycard session so the deploy tool can authenticate."
+Present the user with the two options from the reference doc:
 
-When the reference doc specifies credential wiring:
-- Delegate credential registration to `/keycard-discover-entities` for the appropriate resource. Invoke from the **session-root working directory** (not from inside `<app-dir>`).
-- Read the active policy with `keycard agent policy`. If it would block provider CLI invocations, delegate to `/keycard-upsert-policy`.
+- **Option A — Keycard Vault (recommended):** Create a vault resource via the Management API, wire the credential entry in the **session-root** `keycard.toml` via `/keycard-upsert-config` (invoke from the session-root working directory, not from inside `<app-dir>`), construct the console credentials URL and present it so the user can paste their deploy token, then trigger a session restart.
+- **Option B — Manual login:** Instruct the user to run `flyctl auth login` in a separate terminal, then re-probe with `flyctl auth whoami`. No session restart needed.
 
-#### Session restart
+Follow the reference doc's detailed procedure for whichever option the user picks. Read the active policy with `keycard agent policy` in either case — if it would block provider CLI invocations, delegate to `/keycard-upsert-policy`.
+
+#### Session restart (Option A only)
 
 After wiring the credential, the agent session must be restarted. Print the rationale block from the reference doc (substituting actual values), create `PROGRESS.md`, and stop. Do not proceed until the session has been restarted and the credential probe succeeds in the new session.
 

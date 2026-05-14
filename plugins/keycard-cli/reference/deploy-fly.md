@@ -32,27 +32,100 @@ Never select an org silently, and never seed the candidate set from documentatio
 
 Probe with `flyctl auth whoami`.
 
-- Exit 0 → credential is wired; continue.
-- Non-zero → no credential is wired.
-
-When the credential is missing, explain what needs to happen:
-
-> The fly.io deploy tool needs a credential to manage your apps, but Keycard hands that credential to fly.io directly through your session — it never passes through me. That's the manual part you'll do once.
->
-> Follow https://docs.keycard.ai/platform/concepts/resources/#brokered-access-legacy to configure a fly.io org token as the underlying credential. Instructions on creating a fly.io access token are at https://fly.io/docs/security/tokens/
+- Exit 0 → credential is wired; skip to §3.
+- Non-zero → no credential is wired; continue to §2.
 
 Never read or echo `FLY_API_TOKEN`. `flyctl auth whoami` is the only probe.
 
-## §2 — Wire credential and policy
+## §2 — Configure fly.io credential
+
+The fly.io deploy credential is not yet available. Present the user with two options:
+
+**Tell the user:**
+
+> The fly.io CLI needs a credential to deploy. There are two ways to set this up:
+>
+> 1. **Keycard Vault (recommended)** — I'll create a vault resource in Keycard and give you a link to paste your fly.io token. The token is encrypted at rest, never touches your machine, and is brokered per-session.
+> 2. **Manual login** — Run `flyctl auth login` in a separate terminal to authenticate the fly CLI directly. This stores a credential on your machine outside of Keycard.
+>
+> Which would you prefer?
+
+Wait for the user to choose before proceeding.
+
+### Option A — Vaulted credential (recommended)
+
+Fly.io doesn't support federated token exchange, so Keycard can't mint per-request tokens the way it does for services like Linear or GitHub. Instead, the fly.io deploy token is stored in Keycard as a **vaulted static credential** — Keycard brokers access to the token for the duration of the agent session, and no persistent credentials are stored on the user's machine.
+
+**Tell the user:** "Setting up the vault resource in Keycard now — you'll just need to paste your fly.io token into the Keycard Console once."
 
 `FLY_API_TOKEN` is consumed by `flyctl`, which the **agent** runs — it belongs in the **session** `keycard.toml` (the one at the session root that `keycard run -- claude` reads at startup). Do **not** add it to `<app-dir>/keycard.toml` — that file ships with the deployed app, which has no use for a deploy-time token.
 
-**Tell the user:** "Wiring the fly.io credential into your Keycard session so the deploy tool can authenticate."
+#### Resolve org and zone identifiers for console URL
 
-- Delegate credential registration to `/keycard-discover-entities` for the `https://api.machines.dev` resource. Invoke that skill from the **session-root working directory** (not from inside `<app-dir>`), because `/keycard-discover-entities` writes to cwd's `keycard.toml`. If that skill cannot find the resource, stop and ask the user to verify it exists in the Keycard console.
-- Read the active policy with `keycard agent policy`. If it would block `flyctl` invocations through `Tool::"bash"`, delegate to `/keycard-upsert-policy` to allow them.
+The skill needs both the `id` and `identifier` (slug) fields for orgs and zones. The `id` is used for API calls; the `identifier` is used to construct the console URL.
 
-### Session restart
+1. List organizations: `GET /organizations --org <org-id>`. From the response, find the org matching `<org-id>` and extract its `identifier` as `<org-identifier>`.
+2. List zones: `GET /zones --org <org-id>`. From the response, find the zone matching `<zone-id>` and extract its `identifier` as `<zone-identifier>`.
+
+Carry `<org-identifier>` and `<zone-identifier>` forward.
+
+#### Look up the zone Vault provider
+
+1. List providers: `GET /zones/<zone-id>/providers --org <org-id>`.
+2. Filter for `type == "keycard-vault"`.
+3. Carry the matching provider's `id` forward as `<vault-provider-id>`.
+4. If no `keycard-vault` provider exists in the zone, stop and instruct the user to verify their zone configuration at `https://console.keycard.ai`.
+
+#### Idempotent lookup-then-create the fly.io resource
+
+Follow the [idempotency pattern](keycard-management-api.md#idempotency):
+
+1. List resources: `GET /zones/<zone-id>/resources --org <org-id>`.
+2. Filter for `identifier == "https://api.machines.dev"`.
+3. If found, reuse its `id` as `<fly-resource-id>`. Surface: "Found existing fly.io resource (`<fly-resource-id>`) — already registered."
+4. If not found, create:
+
+```bash
+keycard agent api /zones/<zone-id>/resources \
+  -X POST \
+  -d '{"name":"https://api.machines.dev","identifier":"https://api.machines.dev","credential_provider_id":"<vault-provider-id>"}' \
+  --org <org-id>
+```
+
+5. On 409, re-list and reuse.
+6. Extract the returned `id` as `<fly-resource-id>`.
+7. Surface: "Created fly.io deploy resource (`<fly-resource-id>`) backed by your zone's Vault provider."
+
+#### Wire credential in session keycard.toml
+
+From the **session-root working directory** (not from inside `<app-dir>`), delegate to `/keycard-upsert-config` to add the credentials entry:
+
+```
+/keycard-upsert-config add a credentials entry: env_var = "FLY_API_TOKEN", resource = "https://api.machines.dev"
+```
+
+Then read the active policy with `keycard agent policy`. If it would block `flyctl` invocations through `Tool::"bash"`, delegate to `/keycard-upsert-policy` to allow them.
+
+#### Direct user to add the token
+
+Construct the console credentials URL:
+
+```
+https://console.keycard.ai/orgs/<org-identifier>/zones/<zone-identifier>/resources/<fly-resource-id>/credentials
+```
+
+**Tell the user** (verbatim, substituting values):
+
+> The vault resource is set up. Now you need to store your fly.io deploy token — this is a one-time step you do in the browser, so the token never passes through me.
+>
+> 1. Create a deploy token scoped to your fly.io org at https://fly.io/docs/security/tokens/
+> 2. Open <constructed-console-url> and paste it as the API token under **Credentials**
+>
+> ⚠ Never paste credentials into an agent conversation. The Keycard Console keeps secrets off the LLM path entirely.
+
+Wait for the user to confirm they've added the token before proceeding.
+
+#### Session restart
 
 After wiring the credential, the agent session must be restarted. Print the following rationale block verbatim (substituting `<session-root-dir>`, `<app-dir>`, and `<fly-org-slug>`), then create `PROGRESS.md` with the same content:
 
@@ -84,6 +157,19 @@ To resume:
 
 Stop here — do not proceed to §3 until the session has been restarted and `flyctl auth whoami` succeeds in the new session.
 
+### Option B — Manual login
+
+**Tell the user:** "You can log in to fly.io directly from your terminal. This stores the credential on your machine rather than in Keycard."
+
+Instruct the user to run `flyctl auth login` in a **separate terminal** (not inside the agent session). This opens a browser-based OAuth flow.
+
+After the user confirms they've logged in, re-probe with `flyctl auth whoami`:
+
+- Exit 0 → credential is now available; skip to §3. No session restart is needed since `flyctl` reads its own config file, not a Keycard-injected env var.
+- Non-zero → login did not succeed. Ask the user to retry or switch to Option A.
+
+Read the active policy with `keycard agent policy`. If it would block `flyctl` invocations through `Tool::"bash"`, delegate to `/keycard-upsert-policy` to allow them.
+
 ## §3 — Deploy artifacts
 
 **Tell the user:** "Setting up the deployment configuration — this tells fly.io how to build and run your app."
@@ -105,13 +191,29 @@ If `./<app-dir>/fly.toml` exists, treat it as authoritative. Validate that:
 - `[http_service].internal_port` matches `<port>`. If it doesn't, patch it and surface: `⚠ Aligned fly.toml internal_port=<port> with the server's PORT`.
 - `[env].KEYCARD_URL` is set (see below). If missing, add it.
 
-If `fly.toml` does not exist, run `flyctl launch --no-deploy --copy-config` with the project name and `<fly-org-slug>`. After generation:
+If `fly.toml` does not exist, run `flyctl launch --no-deploy --copy-config --ha=false` with the project name and `<fly-org-slug>`. After generation:
 - Patch `[http_service].internal_port` to `<port>` if the generated value differs.
 - Add `[env].KEYCARD_URL` (see below).
 
 Surface generated files (`fly.toml`, `Dockerfile`, `.dockerignore`) and require user confirmation before continuing. Never overwrite an existing `Dockerfile` without explicit confirmation.
 
 If `fly.toml` declares an `org` that disagrees with `<fly-org-slug>`, stop and ask the user which is correct.
+
+### Single-machine default
+
+By default, deploy to a **single Fly machine** (no high-availability redundancy). This keeps costs minimal and is appropriate for most Keycard demo and dev deployments.
+
+Ensure `fly.toml` contains:
+
+```toml
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = 256
+```
+
+If `fly.toml` already has a `[[vm]]` section, leave it as-is. If it does not, add the block above.
+
+**Override:** only deploy with multiple machines / HA if the user's prompt explicitly requests it (e.g. "deploy with HA", "deploy two machines", "enable high availability"). In that case, omit the `--ha=false` flag from `flyctl launch` and `flyctl deploy`, and do not add the `[[vm]]` section.
 
 ### Pre-write KEYCARD_URL
 
@@ -255,7 +357,9 @@ Carry `<credential-id>` forward.
 
 **Tell the user:** "Shipping to fly.io — this builds a container image remotely and deploys it to your fly org."
 
-Run `flyctl deploy --remote-only` from `<app-dir>`.
+Run `flyctl deploy --remote-only --ha=false` from `<app-dir>`.
+
+If the user explicitly requested HA / multi-machine deployment, omit `--ha=false`.
 
 On failure: surface the verbatim flyctl output, run `flyctl logs` for triage, and stop. Do **not** read `.env` or echo secret values.
 
