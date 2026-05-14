@@ -35,9 +35,13 @@ If `$ARGUMENTS` is empty, ask: "What policy change would you like to make? (e.g.
 
 Wait for the response before continuing.
 
-## Step 3 — Propose change
+## Step 3 — Discover tool names
 
-If the requested change is already fully represented in the current policy, skip Steps 3–5 and respond: "The policy already contains this rule — no change is needed." Then stop.
+If the requested change mentions a tool name you don't recognize as a built-in, use your tool-listing capability to discover the exact tool names available in your environment. If the MCP server requires authentication before you can list its tools, authenticate it first.
+
+## Step 4 — Propose change
+
+If the requested change is already fully represented in the current policy, skip Steps 4–6 and respond: "The policy already contains this rule — no change is needed." Then stop.
 
 Generate the **minimal Cedar clause(s)** needed to implement the requested change, following the rules in `.agents/reference/cedar-policy.md`. Key checklist:
 
@@ -45,7 +49,7 @@ Generate the **minimal Cedar clause(s)** needed to implement the requested chang
 - Add `@description(...)` on every new or modified clause.
 - Add `@itl("prompt")` only if explicitly requested.
 
-Compose the **full updated policy** by merging the new clause(s) into the policy from Step 1. Keep the full text internally — you will need it for Step 5.
+Compose the **full updated policy** by merging the new clause(s) into the policy from Step 1. Keep the full text internally — you will need it for Step 6.
 
 **Do not ask clarifying questions before presenting the proposal.** Make reasonable assumptions and proceed immediately. In a single response, output all three of the following:
 
@@ -75,15 +79,15 @@ Compose the **full updated policy** by merging the new clause(s) into the policy
 Does this look correct? Type 'yes' to apply, or describe any adjustments.
 ````
 
-## Step 4 — Wait for confirmation
+## Step 5 — Wait for confirmation
 
 Do **not** write anything until the user explicitly confirms (e.g. "yes", "apply", "looks good").
 
-If the user requests adjustments, return to Step 3 with the revised request.
+If the user requests adjustments, return to Step 4 with the revised request.
 
 If the user declines, stop without writing.
 
-## Step 5 — Write the policy
+## Step 6 — Write the policy
 
 Determine the target path. If `$KEYCARD_POLICY_FILE` is set, use it directly (skip the mkdir). Otherwise fall back to the XDG default:
 ```bash
@@ -97,14 +101,14 @@ mkdir -p "${XDG_STATE_HOME:-$HOME/.local/state}/keycard"
 
 Write the confirmed policy to the resolved path using the Write tool (overwrite the entire file with the proposed policy text).
 
-## Step 6 — Verify
+## Step 7 — Verify
 
 Re-run:
 ```bash
 keycard agent policy
 ```
 
-Confirm the output contains the new or modified clause(s) from Step 3.
+Confirm the output contains the new or modified clause(s) from Step 4.
 
 - **If the clause(s) are present**: confirm success — "Policy updated successfully."
 - **If any clause is missing or different**: report the discrepancy clearly:
