@@ -12,7 +12,7 @@ Then stop.
 
 ## Endpoint tree
 
-`--org` is required on every call. Use `org.id` in `keycard.toml`, the `ORG` environment variable, or `--org` flag. If none is set, call `/organizations` first to find the org ID.
+`--org` is required on every call. Use the `ORG` environment variable or pass `--org` explicitly; if neither is available, call `/organizations` first to find the org ID.
 
 ### List organizations
 

@@ -22,7 +22,7 @@ Only the fields below are recognised in `keycard.toml`. Fields marked **env/flag
 | `environment` | `KEYCARD_ENV` | `production` | `production`, `staging`, `dev`, `localdev` |
 | `zone.id` | `ZONE` / `--zone` | — | Zone ID |
 | `zone.issuer.url` | `ISSUER_URL` / `--issuer-url` | — | OIDC issuer override; must use HTTPS — **env/flag only** |
-| `org.id` | `ORG` / `--org` | — | Org ID |
+| `org.id` | `ORG` / `--org` | — | Org ID — **env/flag only** |
 | `oidc.port` | `OIDC_CALLBACK_PORT` | `0` (random) | Auth callback port — **env/flag only** |
 | `home.dir` | `KEYCARD_HOME` | OS default | Home directory override — **env/flag only** |
 | `home.state` | `XDG_STATE_HOME` | `~/.local/state/keycard` | State directory override — **env/flag only** |
