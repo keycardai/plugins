@@ -1,6 +1,7 @@
 {
   "name": "keycard-cli",
   "description": "A plugin to integrate the Keycard CLI with Claude Code.",
+  "license": "Apache-2.0",
   "hooks": {
     "SessionStart": [
       {
@@ -36,5 +37,5 @@
       }
     ]
   },
-  "version": "0.0.5"
+  "version": "0.0.6"
 }

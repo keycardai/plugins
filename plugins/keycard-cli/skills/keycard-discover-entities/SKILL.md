@@ -36,7 +36,7 @@ Parse `$ARGUMENTS` to identify the target service (e.g. "GitHub", "npm").
 
 **Resolve org ID** — the CLI config system resolves org automatically: `org.id` in `keycard.toml` is checked first, then the `ORG` environment variable, then the `--org` flag. If none of these is set, run `keycard agent api /organizations` to list available orgs and ask the user which to use. This value is required before any further API calls.
 
-**Discover available entities** by following the endpoint tree in [`.agents/reference/keycard-management-api.md`](.agents/reference/keycard-management-api.md).
+**Discover available entities** by following the endpoint tree in [`../../reference/keycard-management-api.md`](../../reference/keycard-management-api.md).
 
 Match the target service against the `resource` URIs in the results — do not walk the full tree interactively unless no match is found. If multiple entries match, display them and ask which to register before proceeding.
 

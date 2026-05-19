@@ -11,6 +11,10 @@ keycard agent policy
 
 Never read `~/.local/state/keycard/policy.cedar` directly — use the CLI as the authoritative source. To write a policy, write to `~/.local/state/keycard/policy.cedar` (or `$XDG_STATE_HOME/keycard/policy.cedar` if `XDG_STATE_HOME` is set), then verify with `keycard agent policy`.
 
+### Warm reload
+
+The policy file is read fresh on every hook evaluation — there is no in-process cache. Writing a new policy to disk takes effect immediately; **no restart of `keycard run` is required**.
+
 ## Permit/forbid syntax
 
 ```cedar
@@ -45,6 +49,27 @@ Always `Action::"Agent::ToolUse"` for tool-use policies.
 `Tool::"<tool_name>"` — the tool name as it appears in the Keycard runtime.
 
 **Lowercase convention**: use lowercase tool names (e.g. `Tool::"bash"`, `Tool::"read"`) for cross-harness compatibility. Some harnesses (e.g. pi-mono) use lowercase names; matching existing conventions in the policy avoids split-coverage bugs. Case-insensitive matching is used at diagnosis time — `Tool::"bash"` matches a block on `Bash`.
+
+### MCP tools
+
+MCP servers expose tools under the naming convention `mcp__<server>__<function>` (double underscores). Cedar policies match these names verbatim:
+
+```cedar
+Tool::"mcp__<server>__<function>"
+```
+
+**Example** — permit all users to invoke the GitHub MCP list-issues tool:
+
+```cedar
+@description("Permit all users to use the GitHub MCP list-issues tool.")
+permit (
+  principal,
+  action == Action::"Agent::ToolUse",
+  resource == Tool::"mcp__github__list_issues"
+);
+```
+
+To discover exact MCP tool names available in your environment, use your tool-listing capability (the names appear exactly as they should in the policy).
 
 ## Annotations
 

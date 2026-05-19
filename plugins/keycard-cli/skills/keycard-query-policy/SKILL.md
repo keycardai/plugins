@@ -6,13 +6,14 @@ description: |
   TRIGGER when: user asks what tools are allowed, whether a specific tool is permitted (e.g. "Can I use X?", "Am I allowed to use X?", "What's my policy?"), why a tool was blocked, or reports "a tool was just blocked."
   DO NOT TRIGGER when: user wants to change, add, or remove a policy rule (→ `keycard-upsert-policy`); user asks general questions about Cedar concepts without reference to their active policy.
 argument-hint: "[policy question or blocked tool, e.g. 'May I use the Bash tool?' or 'Why was Read blocked?']"
+license: Apache-2.0
 ---
 
 # keycard-query-policy
 
 You are helping the user understand their active Cedar policy. This skill is read-only — to modify the policy, direct the user to `/keycard-upsert-policy`.
 
-See `.agents/reference/cedar-policy.md` for Cedar syntax reference. Policy reads must always use `keycard agent policy` — never the Read tool on the file directly.
+See `../../reference/cedar-policy.md` for Cedar syntax reference. Policy reads must always use `keycard agent policy` — never the Read tool on the file directly.
 
 ## Step 1 — Accept question
 
@@ -39,13 +40,13 @@ Handle the question or diagnostic request using the policy from Step 2:
 
 - **"May I use X?"** — state allow or deny, citing the specific Cedar clause. If a `forbid` matches, note it takes precedence over any `permit`.
 - **"What can I do?"** / **"What tools are allowed?"** — list all tools covered by `permit` clauses. Note any with `@itl` (require approval). Note any `forbid` overrides.
-- **Active-policy questions** — answer questions about the *contents of the loaded policy* (e.g. "do I have any `@itl` rules?") using the policy text from Step 2. For abstract Cedar concepts not tied to the active policy, say: "That's a general Cedar question — see `.agents/reference/cedar-policy.md` for syntax details. To change your policy, run `/keycard-upsert-policy`."
+- **Active-policy questions** — answer questions about the *contents of the loaded policy* (e.g. "do I have any `@itl` rules?") using the policy text from Step 2. For abstract Cedar concepts not tied to the active policy, say: "That's a general Cedar question — see `../../reference/cedar-policy.md` for syntax details. To change your policy, run `/keycard-upsert-policy`."
 
 ### Block-diagnosis intents
 
 When the user reports a tool was blocked ("a tool was just blocked", "Why was X blocked?"):
 
-1. Identify the tool name from `$ARGUMENTS` or ask: "Which tool was blocked? (e.g. `Bash`, `Read`, `MCP(server.function)`)"
+1. Identify the tool name from `$ARGUMENTS` or ask: "Which tool was blocked? (e.g. `Bash`, `Read`, `mcp__<server>__<function>` — see `.agents/reference/cedar-policy.md` MCP tools)"
 2. Search the policy for clauses matching the tool name (case-insensitive, e.g. `Tool::"bash"` matches `Bash`). If a matching clause has `when`/`unless` conditions, note that it may only apply conditionally — quote the conditions alongside the clause.
 3. Output exactly three parts for whichever case applies:
 

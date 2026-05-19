@@ -10,13 +10,14 @@ examples:
   - /keycard-upsert-policy Allow the Bash tool
   - /keycard-upsert-policy Require approval for WebFetch
   - /keycard-upsert-policy Block curl commands in Bash
+license: Apache-2.0
 ---
 
 # keycard-upsert-policy
 
 You are helping the user modify the Cedar policy enforced by Keycard. Follow the propose → confirm → write → verify pattern: present the full diff first, write only after explicit user confirmation.
 
-See `.agents/reference/cedar-policy.md` for Cedar syntax rules, annotation semantics, and compactness/carve-out rules. Policy reads must always use `keycard agent policy` — never the Read tool on the file directly.
+See `../../reference/cedar-policy.md` for Cedar syntax rules, annotation semantics, and compactness/carve-out rules. Policy reads must always use `keycard agent policy` — never the Read tool on the file directly.
 
 ## Step 1 — Read the policy
 
@@ -37,13 +38,13 @@ Wait for the response before continuing.
 
 ## Step 3 — Discover tool names
 
-If the requested change mentions a tool name you don't recognize as a built-in, use your tool-listing capability to discover the exact tool names available in your environment. If the MCP server requires authentication before you can list its tools, authenticate it first.
+If the requested change mentions a tool name you don't recognize as a built-in, use your tool-listing capability to discover the exact tool names available in your environment. If the MCP server requires authentication before you can list its tools, authenticate it first. See `.agents/reference/cedar-policy.md` (MCP tools) for the Cedar name format.
 
 ## Step 4 — Propose change
 
 If the requested change is already fully represented in the current policy, skip Steps 4–6 and respond: "The policy already contains this rule — no change is needed." Then stop.
 
-Generate the **minimal Cedar clause(s)** needed to implement the requested change, following the rules in `.agents/reference/cedar-policy.md`. Key checklist:
+Generate the **minimal Cedar clause(s)** needed to implement the requested change, following the rules in `../../reference/cedar-policy.md`. Key checklist:
 
 - Apply the compactness and carve-outs rule.
 - Add `@description(...)` on every new or modified clause.
@@ -110,7 +111,7 @@ keycard agent policy
 
 Confirm the output contains the new or modified clause(s) from Step 4.
 
-- **If the clause(s) are present**: confirm success — "Policy updated successfully."
+- **If the clause(s) are present**: confirm success — "Policy updated and active — changes take effect immediately without restarting keycard run."
 - **If any clause is missing or different**: report the discrepancy clearly:
   - Show the expected clause(s) vs. what was read back.
   - Do **not** claim success.
