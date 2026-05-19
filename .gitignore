@@ -1,0 +1,16 @@
+# Local Keycard configuration (contains org/zone IDs and credential config)
+keycard.toml
+
+# macOS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment files
+.env
+.env.*
+!.env.example
