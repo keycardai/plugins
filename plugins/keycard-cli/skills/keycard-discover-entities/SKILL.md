@@ -34,8 +34,6 @@ If `$ARGUMENTS` does not name a specific service (e.g. "what entities are availa
 
 Parse `$ARGUMENTS` to identify the target service (e.g. "GitHub", "npm").
 
-**Resolve org ID** — the CLI config system resolves org automatically: `org.id` in `keycard.toml` is checked first, then the `ORG` environment variable, then the `--org` flag. If none of these is set, run `keycard agent api /organizations` to list available orgs and ask the user which to use. This value is required before any further API calls.
-
 **Discover available entities** by following the endpoint tree in [`../../reference/keycard-management-api.md`](../../reference/keycard-management-api.md).
 
 Match the target service against the `resource` URIs in the results — do not walk the full tree interactively unless no match is found. If multiple entries match, display them and ask which to register before proceeding.
@@ -64,21 +62,13 @@ Confirm the new entry appears in the output. If it does not, re-read `keycard.to
 
 If `$ARGUMENTS` is about MCP servers (e.g. "add an MCP server", "what MCP servers are available", "discover MCP servers"), follow this branch instead of Steps 1–3 above.
 
-### MCP Step 1 — Resolve org and zone
-
-**Resolve org ID** — use the `ORG` environment variable if set. Otherwise run `keycard agent api /organizations` to list available orgs and ask the user which to use.
-
-**Resolve zone ID** — use the `ZONE` environment variable if set. Otherwise run:
-```bash
-keycard agent api /zones --org <org-id>
-```
-List the zones and ask the user which zone to use.
-
-### MCP Step 2 — Discover MCP-provider applications
+### MCP Step 1 — Discover MCP-provider applications
 
 ```bash
-keycard agent api /zones/<zone-id>/applications --org <org-id>
+keycard agent api /zones/{zone}/applications
 ```
+
+Zone resolves automatically from `zone.id` in `keycard.toml` or the `ZONE` environment variable.
 
 Filter results to entries where the `traits` array includes `"mcp-provider"`.
 
@@ -88,11 +78,11 @@ If the user asked to list available MCP servers (no intent to add), display the 
 
 If multiple results match and the user wants to add one, list them and ask which to add.
 
-### MCP Step 3 — Confirm details with user
+### MCP Step 2 — Confirm details with user
 
 Display the selected server's `name`, `command`, every `args` entry, every `env` key/value, and source zone verbatim (do not summarize or truncate). Ask the user to confirm before writing.
 
-### MCP Step 4 — Delegate to keycard-upsert-mcp-config
+### MCP Step 3 — Delegate to keycard-upsert-mcp-config
 
 On confirm, invoke:
 ```
@@ -103,18 +93,14 @@ Omit `args` and `env` from the invocation when they are empty.
 
 ## Examples
 
-**Invocation:**
-```
-/keycard-discover-entities I need GitHub credentials
-/keycard-discover-entities what entities are available?
-/keycard-discover-entities add an NPM registry credential
-/keycard-discover-entities configure access to the GitHub API
-/keycard-discover-entities add an MCP server
-/keycard-discover-entities what MCP servers are available in my zone?
-/keycard-discover-entities discover MCP servers
-```
+**User asks:**
+- "I need GitHub credentials"
+- "What entities are available in the Management API?"
+- "Add an NPM registry credential"
+- "Configure access to the GitHub API"
+- "Add an MCP server" / "What MCP servers are available in my zone?"
 
-**Sample output for `/keycard-discover-entities I need GitHub credentials`:**
+**Sample output for "I need GitHub credentials":**
 ```
 No configured credentials found for GitHub.
 Found `https://api.github.com (GitHub API)` resource.

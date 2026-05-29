@@ -12,33 +12,35 @@ Then stop.
 
 ## Endpoint tree
 
-`--org` is required on every call. Use `org.id` in `keycard.toml`, the `ORG` environment variable, or `--org` flag. If none is set, call `/organizations` first to find the org ID.
+`--org` is an optional override. The CLI resolves org automatically from `org.id` in `keycard.toml` or the `ORG` environment variable; pass `--org` only when you need to override the configured value.
+
+Zone is resolved automatically from `zone.id` in `keycard.toml` or the `ZONE` environment variable. Use `{zone}` in the path — it is interpolated before the request fires.
 
 ### List organizations
 
 ```bash
-keycard agent api /organizations --org <org-id>
+keycard agent api /organizations [--org <org-id>]
 ```
 
 ### List zones
 
 ```bash
-keycard agent api /zones --org <org-id>
+keycard agent api /zones [--org <org-id>]
 ```
 
 ### Zone-scoped listings
 
 List providers available in a zone:
 ```bash
-keycard agent api /zones/<zone-id>/providers --org <org-id>
+keycard agent api /zones/{zone}/providers
 ```
 
 List resources available in a zone:
 ```bash
-keycard agent api /zones/<zone-id>/resources --org <org-id>
+keycard agent api /zones/{zone}/resources
 ```
 
 List applications available in a zone:
 ```bash
-keycard agent api /zones/<zone-id>/applications --org <org-id>
+keycard agent api /zones/{zone}/applications
 ```

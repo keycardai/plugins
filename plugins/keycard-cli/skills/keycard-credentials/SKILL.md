@@ -35,10 +35,7 @@ Present results under a `## Credentials` heading as a Markdown list:
 
 ## Examples
 
-**Invocation:**
-```
-/keycard-credentials
-```
+**User asks:** "What credentials do I have?" / "Am I authenticated?" / "What services are available?"
 
 **Sample output (credentials present):**
 ```
@@ -53,10 +50,8 @@ No credentials found. Start a secure session with: `keycard run -- <your-command
 ```
 
 **Command failure (no configuration file):**
-```
-/keycard-credentials
-```
-Sample output:
+
+User asks "is my GitHub token loaded?" but no keycard.toml is found — sample output:
 ```
 No keycard.toml found. Ensure keycard.toml exists and contains at least one [[credentials.default]] entry, then start a secure session with: `keycard run -- <your-command>`.
 ```

@@ -75,9 +75,8 @@ Write the updated config to `.mcp.json` with 2-space indentation. Example format
 
 Re-read `.mcp.json` and show the user the added `mcpServers["<name>"]` entry to confirm the write succeeded.
 
-## Invocation examples
+## Examples
 
-```
-/keycard-upsert-mcp-config add "my-server" command="npx" args=["-y", "@my/mcp-server"] env={}
-/keycard-upsert-mcp-config add "local-tool" command="/usr/local/bin/my-mcp"
-```
+**User asks:**
+- "add an MCP server called my-server using npx with args -y @my/mcp-server"
+- "add a local MCP tool at /usr/local/bin/my-mcp"

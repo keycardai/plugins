@@ -11,7 +11,7 @@ license: Apache-2.0
 
 # keycard-query-policy
 
-You are helping the user understand their active Cedar policy. This skill is read-only — to modify the policy, direct the user to `/keycard-upsert-policy`.
+You are helping the user understand their active Cedar policy. This skill is read-only — to modify the policy, tell the user to describe the change they'd like to make.
 
 See `../../reference/cedar-policy.md` for Cedar syntax reference. Policy reads must always use `keycard agent policy` — never the Read tool on the file directly.
 
@@ -40,7 +40,7 @@ Handle the question or diagnostic request using the policy from Step 2:
 
 - **"May I use X?"** — state allow or deny, citing the specific Cedar clause. If a `forbid` matches, note it takes precedence over any `permit`.
 - **"What can I do?"** / **"What tools are allowed?"** — list all tools covered by `permit` clauses. Note any with `@itl` (require approval). Note any `forbid` overrides.
-- **Active-policy questions** — answer questions about the *contents of the loaded policy* (e.g. "do I have any `@itl` rules?") using the policy text from Step 2. For abstract Cedar concepts not tied to the active policy, say: "That's a general Cedar question — see `../../reference/cedar-policy.md` for syntax details. To change your policy, run `/keycard-upsert-policy`."
+- **Active-policy questions** — answer questions about the *contents of the loaded policy* (e.g. "do I have any `@itl` rules?") using the policy text from Step 2. For abstract Cedar concepts not tied to the active policy, say: "That's a general Cedar question — see `../../reference/cedar-policy.md` for syntax details. To change your policy, describe the change you'd like to make."
 
 ### Block-diagnosis intents
 
@@ -54,19 +54,19 @@ When the user reports a tool was blocked ("a tool was just blocked", "Why was X 
 
 1. **Diagnosis**: "A `forbid` clause is blocking this tool — adding a `permit` will have no effect while it remains."
 2. **Blocking clause(s)**: Quote all matching `forbid` clauses exactly as they appear in the policy.
-3. **Suggested fix**: "Remove or narrow the `forbid` clause by running `/keycard-upsert-policy <change request>`."
+3. **Suggested fix**: "Remove or narrow the `forbid` clause by telling Claude you'd like to update your policy (e.g. 'remove the forbid on the Read tool')."
 
 **Case B — No matching `permit` found (and no active `forbid`):**
 
 1. **Diagnosis**: "No `permit` clause was found for this tool."
 2. **Blocking clause**: `"no matching permit found"`
-3. **Suggested fix**: "Add a permit clause by running `/keycard-upsert-policy allow the <tool name> tool`."
+3. **Suggested fix**: "Add a permit clause by telling Claude you'd like to allow the <tool name> tool."
 
 **Case C — A `permit` exists but no `forbid` is present:**
 
 1. **Diagnosis**: "A `permit` clause exists, but it may carry unsatisfied `when`/`unless` conditions, or the tool requires in-the-loop (`@itl`) approval not given at call time."
 2. **Matching clause(s)**: Quote all matching `permit` clause(s) exactly, including any `when`/`unless` conditions.
-3. **Suggested fix**: For `@itl`: "Approve the tool call when prompted." For conditional permits: "Check whether the runtime context matched the `when` conditions; run `/keycard-upsert-policy` to loosen or remove the condition."
+3. **Suggested fix**: For `@itl`: "Approve the tool call when prompted." For conditional permits: "Check whether the runtime context matched the `when` conditions; tell Claude you'd like to loosen or remove the condition."
 
 Keep answers concise. Quote relevant Cedar clause(s) to justify the answer. Do not propose or write any policy changes.
 
@@ -110,4 +110,4 @@ Output:
 > forbid (principal, action == Action::"Agent::ToolUse", resource == Tool::"read");
 > ```
 >
-> **Suggested fix**: Remove or narrow the `forbid` clause by running `/keycard-upsert-policy remove the forbid on the Read tool`.
+> **Suggested fix**: Remove or narrow the `forbid` clause by telling Claude you'd like to update your policy (e.g. "remove the forbid on the Read tool").

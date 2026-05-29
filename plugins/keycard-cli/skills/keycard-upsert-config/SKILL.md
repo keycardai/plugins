@@ -44,10 +44,9 @@ Set these via environment variable instead:
 export ORG=my-org
 ```
 
-## Invocation examples
+## Examples
 
-```
-/keycard-upsert-config set my zone to dev-zone-123
-/keycard-upsert-config switch to staging
-/keycard-upsert-config add a credentials entry: env_var = "GITHUB_TOKEN", resource = "https://api.github.com"
-```
+**User asks:**
+- "set my zone to dev-zone-123"
+- "switch to staging"
+- "add a GitHub credentials entry for GITHUB_TOKEN"
