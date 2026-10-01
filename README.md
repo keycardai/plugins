@@ -12,7 +12,7 @@ Integrates the Keycard CLI with [Claude Code](https://claude.ai/code).
 
 - **SessionStart hook** — when the session was not started with `keycard run claude`, adds a note to Claude's context saying so, and that the credentials declared in `keycard.toml` are not in the session's environment. Such a session is not connected to your Zone's MCP gateways either.
 - **PreToolUse hook** — runs `keycard agent hook claude` before every tool call. It records the call to your Zone's audit log and, for shell commands, injects the session's credentials by running the command through `keycard agent exec`.
-- **PostToolUse hook** — runs `keycard agent hook claude` after every tool call. In a session started with `keycard run claude`, it redacts the session's credential values from the tool's output: where a value appeared, Claude sees a placeholder that names the resource, such as `<redacted+https://api.github.com>`. Outside `keycard run claude` the hook knows none of those values, so the output reaches Claude unchanged.
+- **PostToolUse hook** — runs `keycard agent hook claude` after every tool call. In a session started with `keycard run claude`, it redacts the session's credential values from the tool's output: where a value appeared, Claude sees a placeholder that names the resource, such as `<redacted+https://api.github.com>`. Outside `keycard run claude` the hook does not know the values that `keycard agent exec` mints for shell commands, so any that appear in a command's output reach Claude unredacted.
 - **UserPromptSubmit hook** — runs `keycard agent hook claude` on every prompt submission to record the prompt to your Zone's audit log.
 
 **Skills included:**
