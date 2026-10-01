@@ -1,6 +1,6 @@
 # Keycard Plugins
 
-Agent harness plugins for the [Keycard CLI](https://keycard.ai). Each plugin wires Keycard's policy enforcement, credential injection, and management API into an AI agent runtime.
+Agent harness plugins for the [Keycard CLI](https://keycard.ai). Each plugin wires Keycard's credential injection, tool-use auditing, and management API into an AI agent runtime.
 
 ## Plugins
 
@@ -10,18 +10,16 @@ Integrates the Keycard CLI with [Claude Code](https://claude.ai/code).
 
 **What it does:**
 
-- **SessionStart hook** — warns at session start if the session was not launched via `keycard run`, so you know policy enforcement and credential injection are inactive.
-- **PreToolUse hook** — runs `keycard agent hook --claude` before every tool call to enforce the active Cedar policy. Blocked tools are stopped before execution.
-- **UserPromptSubmit hook** — runs `keycard agent hook --claude` on every prompt submission for prompt-level policy checks.
+- **SessionStart hook** — reminds you when the session was not started with `keycard run claude`, so the credentials declared in `keycard.toml` are not in its environment.
+- **PreToolUse hook** — runs `keycard agent hook claude` before every tool call. It records the call to your Zone's audit log and, for shell commands, injects the session's credentials by running the command through `keycard agent exec`.
+- **PostToolUse hook** — runs `keycard agent hook claude` after every tool call to redact injected credential values from the tool's output.
+- **UserPromptSubmit hook** — runs `keycard agent hook claude` on every prompt submission to record the prompt to your Zone's audit log.
 
 **Skills included:**
 
 | Skill | Purpose |
 |---|---|
 | `/keycard-credentials` | Show what credentials (tokens, services) are active in the current session |
-| `/keycard-discover-entities` | Discover available credential entities and MCP servers via the Management API and register them |
-| `/keycard-query-policy` | Read and explain the active Cedar policy; diagnose why a tool was blocked |
-| `/keycard-upsert-policy` | Propose, confirm, and apply a Cedar policy change |
 | `/keycard-upsert-config` | Set or update a field in `keycard.toml` |
 | `/keycard-upsert-mcp-config` | Add or update an MCP server entry in `.mcp.json` |
 
@@ -32,30 +30,28 @@ Integrates the Keycard CLI with [Claude Code](https://claude.ai/code).
 
 ## Installation
 
-Add the Keycard marketplace to Claude Code, then install the plugin:
+Add the Keycard marketplace to Claude Code, then install the plugin at project scope, so its hooks run only in projects that use Keycard:
 
 ```bash
 claude plugin marketplace add keycardai/plugins
-claude plugin install keycard-cli@keycardai
+claude plugin install keycard-cli@keycardai -s project
 ```
+
+`keycard run claude` offers the same two commands when the plugin is missing or out of date.
 
 ## Usage
 
-Start a Claude Code session through Keycard to activate policy enforcement and credential injection:
+Start a Claude Code session through Keycard to put the credentials declared in `keycard.toml` in its environment and connect it to your Zone's MCP gateways:
 
 ```bash
-keycard run -- claude
+keycard run claude
 ```
 
-Without `keycard run`, the hooks are installed but Keycard is not managing the session — the SessionStart hook will remind you.
+Without `keycard run claude`, the hooks are installed but the session's credentials are not — the SessionStart hook will remind you.
 
 Once in a session, just ask naturally. For example:
 
 - "What credentials do I have in this session?"
-- "What tools am I allowed to use?"
-- "Why was that tool blocked?"
-- "Allow the Bash tool."
-- "Require approval before WebFetch runs."
 - "Set my zone to my-zone-id."
 - "I need GitHub credentials."
 
@@ -67,16 +63,12 @@ plugins/
     .claude-plugin/
       plugin.json          # hooks and plugin metadata
     reference/
-      cedar-policy.md      # Cedar policy syntax reference
       keycard-config-fields.md  # keycard.toml field reference
       keycard-management-api.md # Management API endpoint reference
     skills/
       keycard-credentials/
-      keycard-discover-entities/
-      keycard-query-policy/
       keycard-upsert-config/
       keycard-upsert-mcp-config/
-      keycard-upsert-policy/
 .claude-plugin/
   marketplace.json         # marketplace metadata for this repo
 ```
