@@ -3,7 +3,7 @@ name: keycard-upsert-config
 description: |
   Set or change a field in keycard.toml — reads the current value and writes a targeted update.
   TRIGGER when: user wants to set or change a field in keycard.toml; wants to add or update a credentials entry.
-  DO NOT TRIGGER when: user asks about Cedar policy rules (use `keycard-query-policy`); user asks what credentials are active in the current session (use `keycard-credentials`); user is asking a field question only with no intent to write (read `../../reference/keycard-config-fields.md` directly).
+  DO NOT TRIGGER when: user asks what credentials are active in the current session (use `keycard-credentials`); user is asking a field question only with no intent to write (read `../../reference/keycard-config-fields.md` directly).
 argument-hint: "[what to change, e.g. 'set my zone to dev-123' or 'add a GitHub credential entry for GITHUB_TOKEN']"
 license: Apache-2.0
 ---
@@ -18,8 +18,9 @@ For field definitions, precedence rules, and the credentials section format, see
 
 1. Read `keycard.toml`. If the file does not exist, start with an empty document — do not error.
 2. Make a targeted change to only the relevant field. Do not write fields marked **env/flag only** — they are silently ignored in TOML. If the user requests a change to such a field, tell them: "The `<field>` field is env/flag only and is silently ignored in `keycard.toml`. Set it with `export <ENV_VAR>=<value>` instead." Then stop.
-3. Write back the updated file.
-4. Re-read the updated `keycard.toml` and show the user the modified section to confirm the change was applied.
+3. When adding a `[[credentials.default]]` entry, confirm the `env_var` name with the user before writing. `keycard run` injects it into subprocesses, so a name that collides with a variable already in the user's environment silently shadows it.
+4. Write back the updated file.
+5. Re-read the updated `keycard.toml` and show the user the modified section to confirm the change was applied.
 
 ### Example: set the zone
 

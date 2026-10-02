@@ -9,12 +9,24 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -z \"$KEYCARD_RUN\" ] && printf 'Note: this session was not started via `keycard run`. Keycard policy enforcement and credential injection are inactive.\\nRelaunch with: keycard run -- claude\\n'; exit 0"
+            "command": "[ -z \"$KEYCARD_RUN\" ] && printf 'Note: this session was not started via `keycard run`. Keycard credential injection and tool-use auditing are inactive.\\nRelaunch with: keycard run -- claude\\n'; exit 0"
           }
         ]
       }
     ],
     "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "keycard agent hook claude",
+            "timeout": 600
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
       {
         "matcher": "*",
         "hooks": [
@@ -37,5 +49,5 @@
       }
     ]
   },
-  "version": "0.0.7"
+  "version": "0.0.8"
 }

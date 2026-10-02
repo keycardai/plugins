@@ -17,18 +17,43 @@ When the same value is set in multiple places, the highest-priority source wins:
 
 Only the fields below are recognised in `keycard.toml`. Fields marked **env/flag only** are silently ignored if written to TOML — use the corresponding environment variable or flag instead.
 
-| TOML path | Env var | Default | Notes |
-|---|---|---|---|
-| `environment` | `KEYCARD_ENV` | `production` | `production`, `staging`, `dev`, `localdev` |
-| `zone.id` | `ZONE` / `--zone` | — | Zone ID |
-| `zone.issuer.url` | `ISSUER_URL` / `--issuer-url` | — | OIDC issuer override; must use HTTPS — **env/flag only** |
-| `org.id` | `ORG` / `--org` | — | Org ID |
-| `oidc.port` | `OIDC_CALLBACK_PORT` | `0` (random) | Auth callback port — **env/flag only** |
-| `home.dir` | `KEYCARD_HOME` | OS default | Home directory override — **env/flag only** |
-| `home.state` | `XDG_STATE_HOME` | `~/.local/state/keycard` | State directory override — **env/flag only** |
-| `home.cache` | `XDG_CACHE_HOME` | `~/.cache/keycard` | Cache directory override — **env/flag only** |
-| `credentials.default[*].env_var` | — | — | Env var to populate from the exchanged token (see [Credentials](#credentials)) |
-| `credentials.default[*].resource` | — | — | Resource URI for OIDC token exchange (required) |
+- **`environment`**
+  - **Env var**: `KEYCARD_ENV`
+  - **Default**: `production`
+  - **Notes**: `production`, `staging`, `dev`, `localdev`
+- **`zone.id`**
+  - **Env var / flag**: `ZONE` / `--zone`
+  - **Notes**: Zone ID
+- **`zone.issuer.url`**
+  - **Env var / flag**: `ISSUER_URL` / `--issuer-url`
+  - **Notes**: OIDC issuer override; must use HTTPS. **Env/flag only**.
+- **`org.id`**
+  - **Env var / flag**: `ORG` / `--org`
+  - **Notes**: Org ID
+- **`oidc.port`**
+  - **Env var**: `OIDC_CALLBACK_PORT`
+  - **Default**: `0` (random)
+  - **Notes**: Auth callback port. **Env/flag only**.
+- **`auth.device`**
+  - **Env var / flag**: `KEYCARD_DEVICE` / `--device`
+  - **Default**: `false`
+  - **Notes**: Use the RFC 8628 device authorization flow for `keycard auth signin`. Not written back when the CLI rewrites `keycard.toml`.
+- **`home.dir`**
+  - **Env var**: `KEYCARD_HOME`
+  - **Default**: OS default
+  - **Notes**: Home directory override
+- **`home.state`**
+  - **Env var**: `XDG_STATE_HOME`
+  - **Default**: `~/.local/state/keycard`
+  - **Notes**: State directory override
+- **`home.cache`**
+  - **Env var**: `XDG_CACHE_HOME`
+  - **Default**: `~/.cache/keycard`
+  - **Notes**: Cache directory override
+- **`credentials.default[*].env_var`**
+  - **Notes**: Env var to populate from the exchanged token. See [Credentials](#credentials).
+- **`credentials.default[*].resource`**
+  - **Notes**: Resource URI for OIDC token exchange. Required.
 
 > If a TOML edit has no effect, the field is probably env/flag only. Use the corresponding environment variable instead.
 
